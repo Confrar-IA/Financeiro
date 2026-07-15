@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum TransactionType {
+  income
+  expense
+}
+
+enum PaymentMethod {
+  debit
+  credit
+  pix
+  cash
+  account
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  name         String
+  color        String // hex, ex: #22c55e
+  icon         String // nome do ícone Lucide, ex: Utensils
+  type         TransactionType @default(expense)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Transaction {
+  id               String          @id @default(cuid())
+  description      String
+  amount           Float
+  type             TransactionType
+  date             DateTime
+  categoryId       String
+  paymentMethod    PaymentMethod
+  userId           String
+  isRecurring      Boolean         @default(false)
+  recurrenceMonths Int?
+  installments     Int?
+  installmentIndex Int?
+  seriesId         String?
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([type])
+  @@index([categoryId])
+  @@index([paymentMethod])
+  @@index([seriesId])
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  categoryId  String
+  limitAmount Float
+  month       Int // 1-12
+  year        Int
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, month, year])
+}
