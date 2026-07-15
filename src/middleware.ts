@@ -53,7 +53,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isPublic && authenticated) {
+  if (isPublic && authenticated && publicPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  )) {
     const appUrl = request.nextUrl.clone();
     appUrl.pathname = "/";
     appUrl.search = "";
@@ -65,6 +67,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)",
+    /*
+     * Não passa pelo middleware:
+     * - assets estáticos / PWA (_next, ícones, sw, manifest)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|apple-touch-icon.png|icons/|sw\\.js|manifest\\.webmanifest|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)",
   ],
 };
